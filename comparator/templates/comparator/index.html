@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Comparator</title>
+<link rel="stylesheet" href="{% static 'comparator/css/style.css' %}">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+{% csrf_token %}
+
+<header class="app-header">
+  <div class="logo">DATA<span>_</span>COMPARATOR</div>
+  <div class="status-line" id="status-line">no dataset loaded</div>
+</header>
+
+<nav class="step-nav" id="step-nav">
+  <button class="step-btn active" data-step="upload">01 — Upload</button>
+  <button class="step-btn" data-step="clean" disabled>02 — Clean</button>
+  <button class="step-btn" data-step="visualize" disabled>03 — Visualize</button>
+  <button class="step-btn" data-step="compare" disabled>04 — Compare Models</button>
+  <button class="step-btn" data-step="predict" disabled>05 — Predict</button>
+</nav>
+
+<main>
+
+  <!-- STEP 1: UPLOAD -->
+  <section class="step-panel active" id="panel-upload">
+    <h2>Upload a dataset</h2>
+    <p class="hint">CSV or Excel (.csv, .xlsx, .xls)</p>
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="file-input" accept=".csv,.xlsx,.xls" hidden>
+      <p id="dropzone-label">Drag a file here, or click to browse</p>
+    </div>
+    <div id="upload-error" class="error-box hidden"></div>
+  </section>
+
+  <!-- STEP 2: CLEAN -->
+  <section class="step-panel" id="panel-clean">
+    <h2>Clean &amp; transform</h2>
+    <div class="clean-grid">
+      <div class="clean-controls">
+        <label>Operation</label>
+        <select id="op-select">
+          <option value="drop_nulls">Drop rows with nulls</option>
+          <option value="fill_nulls">Fill nulls</option>
+          <option value="drop_column">Drop column</option>
+          <option value="rename_column">Rename column</option>
+          <option value="encode_categorical">Encode categorical</option>
+          <option value="scale_numeric">Scale numeric</option>
+          <option value="cast_dtype">Cast dtype</option>
+        </select>
+
+        <div id="op-params"></div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" id="apply-op-btn">Apply</button>
+          <button class="btn btn-ghost" id="reset-btn">Reset to original</button>
+        </div>
+        <div id="clean-error" class="error-box hidden"></div>
+
+        <h3>Applied steps</h3>
+        <ul id="steps-list" class="steps-list"></ul>
+      </div>
+
+      <div class="clean-preview">
+        <h3>Columns</h3>
+        <div id="columns-meta" class="columns-meta"></div>
+        <div class="preview-header-row">
+          <h3>Preview <span id="preview-dims"></span></h3>
+          <div class="preview-actions">
+            <button class="btn btn-ghost btn-small" id="view-all-rows-btn">View all rows</button>
+            <button class="btn btn-ghost btn-small" id="download-csv-btn">Download CSV</button>
+          </div>
+        </div>
+        <p id="preview-truncated-note" class="hint hidden"></p>
+        <div class="table-scroll" id="preview-table-scroll"><table id="preview-table"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3: VISUALIZE -->
+  <section class="step-panel" id="panel-visualize">
+    <h2>Visualize</h2>
+    <div class="viz-grid">
+      <div class="viz-controls">
+        <label>Chart type</label>
+        <select id="chart-type-select">
+          <option value="histogram">Histogram</option>
+          <option value="scatter">Scatter</option>
+          <option value="line">Line</option>
+          <option value="bar">Bar</option>
+          <option value="box">Box</option>
+          <option value="correlation">Correlation heatmap</option>
+        </select>
+        <div id="viz-params"></div>
+        <button class="btn btn-primary" id="render-chart-btn">Render</button>
+        <div id="viz-error" class="error-box hidden"></div>
+      </div>
+      <div class="chart-panel">
+        <div id="chart-container" class="chart-container"></div>
+        <button class="btn btn-ghost btn-small hidden" id="download-chart-btn">Download chart (PNG)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 4: COMPARE MODELS -->
+  <section class="step-panel" id="panel-compare">
+    <h2>Compare models</h2>
+    <div class="compare-grid">
+      <div class="compare-controls">
+        <label>Target column</label>
+        <select id="target-select"></select>
+
+        <label>Feature columns</label>
+        <div id="feature-checkboxes" class="checkbox-list"></div>
+
+        <label>Task type (optional override)</label>
+        <select id="task-type-select">
+          <option value="">Auto-detect</option>
+          <option value="regression">Regression</option>
+          <option value="classification">Classification</option>
+        </select>
+
+        <button class="btn btn-primary" id="compare-btn">Train &amp; compare</button>
+        <div id="compare-error" class="error-box hidden"></div>
+      </div>
+      <div class="compare-results" id="compare-results"></div>
+    </div>
+  </section>
+
+  <!-- STEP 5: PREDICT -->
+  <section class="step-panel" id="panel-predict">
+    <h2>Predict</h2>
+    <p class="hint" id="predict-hint">Run a model comparison first.</p>
+    <div id="predict-inputs" class="predict-inputs"></div>
+    <button class="btn btn-primary hidden" id="predict-btn">Predict</button>
+    <div id="predict-result" class="result-box hidden"></div>
+    <div id="predict-error" class="error-box hidden"></div>
+  </section>
+
+</main>
+
+<script src="{% static 'comparator/js/main.js' %}"></script>
+</body>
+</html>

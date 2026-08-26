@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+.venv/
+
+# Django
+db.sqlite3
+staticfiles/
+media/datasets/originals/*
+media/datasets/working/*
+media/models_saved/*
+!media/datasets/originals/.gitkeep
+!media/datasets/working/.gitkeep
+!media/models_saved/.gitkeep
+
+# Env
+.env
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
