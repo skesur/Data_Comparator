@@ -165,33 +165,50 @@ def compare_models(
         "results": results,
         "best_model_name": best_name,
         "best_model": fitted_models[best_name],
+        "all_models": fitted_models,
         "scaler": scaler,
         "y_encoder": y_encoder,
         "feature_order": feature_order,
     }
 
 
-def save_model_bundle(path, model, scaler, y_encoder, feature_order, feature_columns):
-    """Bundle everything needed to reproduce predictions into one joblib file."""
+def save_model_bundle(path, models: dict, scaler, y_encoder, feature_order, feature_columns, best_model_name):
+    """
+    Bundle every trained candidate model (not just the best one) plus
+    everything needed to reproduce predictions into one joblib file,
+    so the frontend can let the user pick which model to predict with.
+    """
     joblib.dump(
         {
-            "model": model,
+            "models": models,  # {model_name: fitted_model}
             "scaler": scaler,
             "y_encoder": y_encoder,
             "feature_order": feature_order,
             "feature_columns": feature_columns,
+            "best_model_name": best_model_name,
         },
         path,
     )
 
 
-def predict_from_bundle(path, input_row: dict):
+def predict_from_bundle(path, input_row: dict, model_name: str | None = None):
     """
     Load a saved bundle and predict on a single new input row
-    (dict of feature_column -> raw value).
+    (dict of feature_column -> raw value), using the given model_name
+    from the bundle (falls back to that run's best model if omitted).
     """
     bundle = joblib.load(path)
-    model = bundle["model"]
+    models = bundle["models"]
+
+    if model_name is None:
+        model_name = bundle.get("best_model_name") or next(iter(models))
+    if model_name not in models:
+        raise MLEngineError(
+            f"Model '{model_name}' was not part of this comparison run. "
+            f"Available: {list(models)}"
+        )
+    model = models[model_name]
+
     scaler = bundle["scaler"]
     y_encoder = bundle["y_encoder"]
     feature_order = bundle["feature_order"]

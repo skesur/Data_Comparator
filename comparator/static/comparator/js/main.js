@@ -23,6 +23,7 @@ const state = {
   lastRunId: null,
   lastRunFeatures: [],
   lastRunBestModel: null,
+  lastRunModelNames: [],
 };
 
 function csrfToken() {
@@ -471,7 +472,8 @@ document.getElementById("compare-btn").addEventListener("click", async () => {
     state.lastRunId = data.run_id;
     state.lastRunFeatures = feature_columns;
     state.lastRunBestModel = data.best_model_name;
-    setupPredictForm(feature_columns, data.best_model_name);
+    state.lastRunModelNames = Object.keys(data.results);
+    setupPredictForm(feature_columns, data.best_model_name, state.lastRunModelNames);
   } catch (err) {
     resultsEl.innerHTML = "";
     showError("compare-error", err.message);
@@ -502,9 +504,20 @@ function renderCompareResults(data) {
 
 // ---------------- Step 5: Predict ----------------
 
-function setupPredictForm(featureColumns, bestModelName) {
-  document.getElementById("predict-hint").textContent =
-    `Using ${bestModelName} — enter values for each feature.`;
+function setupPredictForm(featureColumns, bestModelName, modelNames) {
+  document.getElementById("predict-hint").textContent = "Choose a model and enter values for each feature.";
+
+  const modelSelect = document.getElementById("predict-model-select");
+  modelSelect.innerHTML = "";
+  modelNames.forEach((name) => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name === bestModelName ? `${name} (best)` : name;
+    modelSelect.appendChild(opt);
+  });
+  modelSelect.value = bestModelName;
+  document.getElementById("predict-model-row").classList.remove("hidden");
+
   const container = document.getElementById("predict-inputs");
   container.innerHTML = "";
   featureColumns.forEach((col) => {
@@ -526,9 +539,10 @@ document.getElementById("predict-btn").addEventListener("click", async () => {
     const num = Number(raw);
     input[col] = raw !== "" && !isNaN(num) ? num : raw;
   });
+  const model_name = document.getElementById("predict-model-select").value;
 
   try {
-    const data = await apiFetch(API.predict(state.lastRunId), { method: "POST", body: { input } });
+    const data = await apiFetch(API.predict(state.lastRunId), { method: "POST", body: { input, model_name } });
     const resultBox = document.getElementById("predict-result");
     resultBox.textContent = `Prediction (${data.model_used}): ${data.prediction}`;
     resultBox.classList.remove("hidden");

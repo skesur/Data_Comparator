@@ -286,15 +286,17 @@ def compare_models_view(request, dataset_id):
         best_model_name=outcome["best_model_name"],
     )
 
-    # Persist the winning model bundle so /predict/ can reload it later
+    # Persist bundles for ALL trained candidate models (not just the best
+    # one), so the Predict panel can let the user choose which to use.
     bundle_path = os.path.join(tempfile.gettempdir(), f"model_bundle_{run.id}.joblib")
     ml_engine.save_model_bundle(
         bundle_path,
-        outcome["best_model"],
+        outcome["all_models"],
         outcome["scaler"],
         outcome["y_encoder"],
         outcome["feature_order"],
         feature_columns,
+        outcome["best_model_name"],
     )
     with open(bundle_path, "rb") as f:
         run.best_model_file.save(f"run_{run.id}.joblib", ContentFile(f.read()), save=True)
@@ -310,7 +312,7 @@ def compare_models_view(request, dataset_id):
 
 
 # --------------------------------------------------------------------
-# ML: predict with a saved run's best model
+# ML: predict with a saved run's chosen model
 # --------------------------------------------------------------------
 
 @csrf_exempt
@@ -327,16 +329,23 @@ def predict_view(request, run_id):
         return _json_error("Invalid JSON body.")
 
     input_row = payload.get("input", {})
+    model_name = payload.get("model_name")  # optional — defaults to the run's best model
     missing = [c for c in run.feature_columns if c not in input_row]
     if missing:
         return _json_error(f"Missing input value(s) for: {missing}")
 
     try:
-        prediction = ml_engine.predict_from_bundle(run.best_model_file.path, input_row)
+        prediction = ml_engine.predict_from_bundle(run.best_model_file.path, input_row, model_name)
+    except ml_engine.MLEngineError as exc:
+        return _json_error(str(exc))
     except Exception as exc:
         return _json_error(f"Prediction failed: {exc}")
 
     if hasattr(prediction, "item"):
         prediction = prediction.item()
 
-    return JsonResponse({"ok": True, "prediction": prediction, "model_used": run.best_model_name})
+    return JsonResponse({
+        "ok": True,
+        "prediction": prediction,
+        "model_used": model_name or run.best_model_name,
+    })
