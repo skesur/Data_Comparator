@@ -204,12 +204,16 @@ select:focus, input:focus {
 /* ---------------- Clean step ---------------- */
 .clean-grid, .viz-grid, .compare-grid {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 320px minmax(0, 1fr);
   gap: 28px;
 }
 
 @media (max-width: 900px) {
-  .clean-grid, .viz-grid, .compare-grid { grid-template-columns: 1fr; }
+  .clean-grid, .viz-grid, .compare-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.clean-controls, .clean-preview, .viz-controls, .chart-panel, .compare-controls, .compare-results {
+  min-width: 0;
 }
 
 .columns-meta {
@@ -349,22 +353,71 @@ tr:hover td { background: rgba(0, 247, 255, 0.03); color: var(--text); }
     word-break: break-all;
   }
   
-  .step-nav {
-    padding: 12px 16px 0;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Hide scrollbar for Firefox */
+  .step-lbl {
+    display: none;
   }
   
-  .step-nav::-webkit-scrollbar {
-    display: none; /* Hide scrollbar for Chrome/Safari */
+  .step-nav {
+    padding: 16px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    gap: 0;
+  }
+  
+  /* Progress line connecting step nodes */
+  .step-nav::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 20px;
+    right: 20px;
+    height: 2px;
+    background: var(--border);
+    transform: translateY(-50%);
+    z-index: 1;
   }
   
   .step-btn {
-    flex: 0 0 auto;
-    padding: 8px 12px;
+    position: relative;
+    z-index: 2;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 0.75rem;
+    font-weight: 600;
+    margin: 0;
+    background: var(--bg-panel);
+    border: 2px solid var(--border);
+    color: var(--text-dim);
+    transition: all 0.2s ease;
+  }
+  
+  .step-btn:disabled {
+    opacity: 1;
+    color: #4b4b66;
+    border-color: var(--border);
+    background: var(--bg);
+  }
+  
+  .step-btn:not(:disabled):not(.active) {
+    color: var(--cyan);
+    border-color: var(--cyan);
+    background: var(--bg-panel);
+    box-shadow: 0 0 8px rgba(0, 247, 255, 0.15);
+  }
+  
+  .step-btn.active {
+    background: var(--cyan);
+    color: var(--bg);
+    border-color: var(--cyan);
+    box-shadow: 0 0 12px rgba(0, 247, 255, 0.45);
   }
   
   main {
